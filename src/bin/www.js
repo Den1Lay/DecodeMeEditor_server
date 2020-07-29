@@ -1,20 +1,16 @@
-#!/usr/bin/env node
-
-/**
- * Module dependencies.
- */
-
- import app from '../app';
- import debugLib from 'debug';
- import http from 'http';
- import socketServer from 'socket.io';
+import app from '../app';
+import debugLib from 'debug';
+import http from 'http';
+import {socketServer} from '../routes'
+import {modify} from '../utils'
 
 var debug = debugLib('myapp:server');
-process.title = 'myApp';
+
+modify()
 /**
  * Get port from environment and store in Express.
  */
-
+//console.log([[1, 2, 4, 5], 3, [[[[244, 245]]]]].flat())
 var port = normalizePort(process.env.DEV_PORT || '3000');
 app.set('port', port);
 
@@ -32,13 +28,8 @@ server.listen(port, () => console.log(`Listen ${port} port`));
 server.on('error', onError);
 server.on('listening', onListening);
 
+new socketServer(server);
 
-const io = socketServer(server);
-io.on('connection', socket => {
-  socket.on('npmStop', () => {
-    process.exit(0);
-  })
-})
 /**
  * Normalize a port into a number, string, or false.
  */

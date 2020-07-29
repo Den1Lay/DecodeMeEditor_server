@@ -3,7 +3,7 @@ const socketClient = io.connect('http://localhost:4040'); //add port
 
 setTimeout(() => {
   process.exit(0);
-}, 100)
+}, 1000)
 socketClient.on('connect', () => {
   socketClient.emit('npmStop');
   setTimeout(() => {
