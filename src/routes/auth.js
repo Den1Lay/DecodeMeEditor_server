@@ -57,12 +57,12 @@ router
 
             const personFriends = personObj.userData.friends;
             let friends = data.slice().filter(({userData: {superId}}, i) => {
-              return personFriends.includes(superId)
+              return personFriends.some(({superId: friendId}) => superId === friendId)
             });
             friends = friends.map((el) => {
               return {
                 ...el,
-                projects: el.projects.filter(({access}) => access.includes(data[workInd].userData.superId))
+                projects: el.projects.filter(({access}) => access.includes(data[workInd].userData.superId) || access.includes('all'))
               }
             });
             res.json({

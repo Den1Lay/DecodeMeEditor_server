@@ -1,1 +1,171 @@
 users -- чисто мини инфа о челиках.
+
+ZERO-CHANGE:
+
+
+
+
+[{
+  "userData": {
+    "nickName": "Es_ILias",
+    "superId": "uuid",
+    "friends": [{
+      "superId": "6ad75673-11ed-40a0-ad6a-cb4111c25ebd",
+      "lastProject": null
+    }],
+    "myLastProject": "fb87df5d-da58-4101-9794-8e40fc6bc88d",
+    "password": "17",
+    "applicantList": [],
+    "demoFriends": [{
+      "superId": "friendUUId",
+      "lastProject": "projectId"
+    }]
+  },
+  "projects": [{
+    "name": "PJ",
+    "description": "1_1",
+    "superId": "fb87df5d-da58-4101-9794-8e40fc6bc88d",
+    "access": ["uuid"],
+    "superAccess": ["uuid"],
+    "versions": [{
+      "comment": "Init",
+      "date": "2020-08-04",
+      "superId": "v14557e60-2e7d-4859-8218-2d892c8e0e19",
+      "data": {
+        "pos": "0",
+        "branch": {
+          "branchDirection": "",
+          "base": [],
+          "question": {
+            "coord": {
+              "path": "0",
+              "height": "question"
+            },
+            "label": "",
+            "main": "",
+            "comment": "",
+            "picture": {
+              "src": null,
+              "alt": ""
+            }
+          },
+          "choseCount": 2,
+          "q0": {
+            "ans": "",
+            "pos": "00",
+            "branch": {
+              "branchDirection": "",
+              "base": [{
+                "coord": {
+                  "path": "00",
+                  "height": "0"
+                },
+                "label": "",
+                "main": "",
+                "comment": "",
+                "picture": {
+                  "src": null,
+                  "alt": ""
+                }
+              }],
+              "question": false,
+              "choseCount": 0,
+              "ref": false
+            }
+          },
+          "q1": {
+            "ans": "",
+            "pos": "01",
+            "branch": {
+              "branchDirection": "",
+              "base": [{
+                "coord": {
+                  "path": "01",
+                  "height": "0"
+                },
+                "label": "",
+                "main": "",
+                "comment": "",
+                "picture": {
+                  "src": null,
+                  "alt": ""
+                }
+              }],
+              "question": false,
+              "choseCount": 0,
+              "ref": false
+            }
+          }
+        },
+        "v": "p0.6384925106405379"
+      }
+    }]
+  }],
+  "projectsCoordsData": [{
+    "projectId": "fb87df5d-da58-4101-9794-8e40fc6bc88d",
+    "workVersion": "v14557e60-2e7d-4859-8218-2d892c8e0e19",
+    "v14557e60-2e7d-4859-8218-2d892c8e0e19": {
+      "path": "0",
+      "height": "question"
+    }
+  }],
+  "lastProject": "fb87df5d-da58-4101-9794-8e40fc6bc88d",
+  "lastPerson": "uuid"
+}, {
+  "userData": {
+    "nickName": "DarkKnight",
+    "password": "eze_brizi",
+    "friends": [{
+      "superId": "uuid",
+      "lastProject": null
+    }],
+    "applicantList": [],
+    "myLastProject": "67b835c4-4593-4118-80ab-cce600496a45",
+    "superId": "6ad75673-11ed-40a0-ad6a-cb4111c25ebd"
+  },
+  "projects": [{
+    "name": "Test1",
+    "description": "testDes",
+    "superId": "67b835c4-4593-4118-80ab-cce600496a45",
+    "access": ["6ad75673-11ed-40a0-ad6a-cb4111c25ebd", "all", "uuid"],
+    "superAccess": ["6ad75673-11ed-40a0-ad6a-cb4111c25ebd", "all", "uuid"],
+    "versions": [{
+      "comment": "Init",
+      "date": "2020-08-04",
+      "superId": "f9085ab6-034f-4614-9cc4-5da15ffad924",
+      "available": false,
+      "data": {
+        "pos": "0",
+        "branch": {
+          "branchDirection": "",
+          "base": [{
+            "coord": {
+              "path": "0",
+              "height": "0"
+            },
+            "label": "",
+            "main": "",
+            "comment": "",
+            "picture": {
+              "src": null,
+              "alt": ""
+            }
+          }],
+          "question": false,
+          "choseCount": 0
+        },
+        "v": "p0.48036743791530156"
+      }
+    }]
+  }],
+  "projectsCoordsData": [{
+    "projectId": "67b835c4-4593-4118-80ab-cce600496a45",
+    "workVersion": "f9085ab6-034f-4614-9cc4-5da15ffad924",
+    "f9085ab6-034f-4614-9cc4-5da15ffad924": {
+      "path": "0",
+      "height": "0"
+    }
+  }],
+  "lastProject": "67b835c4-4593-4118-80ab-cce600496a45",
+  "lastPerson": "6ad75673-11ed-40a0-ad6a-cb4111c25ebd"
+}]

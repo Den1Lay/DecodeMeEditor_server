@@ -2,6 +2,7 @@ export {default as readFile} from './readFile';
 export {default as writeFile} from './writeFile';
 export {default as createJWToken} from './createJWToken';
 export {default as verifyJWToken} from './verifyJWToken'
+export {default as FastClone} from './fastClone'
 
 export const modify = () => {
   Array.prototype.flat = function() {
