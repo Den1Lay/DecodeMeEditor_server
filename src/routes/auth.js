@@ -1,7 +1,7 @@
 import {Router} from 'express'
 import {v4} from 'uuid'
 import {createJWToken, verifyJWToken} from '../utils'
-import {cyan} from 'chalk'
+import {cyan, yellow} from 'chalk'
 
 import {readFile, writeFile} from '../utils'
 var router = Router();
@@ -77,6 +77,47 @@ router
           res.json({status: 'error', msg: "Free place)"})
         }
       })
+  })
+  .post('/check', ({headers}, res) => {
+    //console.log(yellow('HEADERS:'),headers)
+    verifyJWToken(headers.token)
+      .then((decoded) => {
+        //res.send(decoded)
+        const {superId} = decoded;
+        readFile('users.json').then(data => {
+          let userInd = null;
+          for(let i in data) {
+            if(data.hasOwnProperty(i) && data[i].userData.superId === superId) {
+              userInd = i;
+            }
+          };
+          if(userInd !== null) {
+            const {superId, nickName} = data[userInd].userData;
+            let freshToken = createJWToken({nickName, superId});
+            let personObj = data[userInd];
+            delete personObj.userData.password;
+
+            const personFriends = personObj.userData.friends;
+            let friends = data.slice().filter(({userData: {superId}}, i) => {
+              return personFriends.some(({superId: friendId}) => superId === friendId)
+            });
+            friends = friends.map((el) => {
+              return {
+                ...el,
+                projects: el.projects.filter(({access}) => access.includes(superId) || access.includes('all'))
+              }
+            });
+            res.json({
+              status: 'success',
+              msg: "Automatic login was made",
+              token: freshToken,
+              data: {personObj, friends}})
+          } else {
+            res.json({status:'error', msg: 'Relogin'})
+          }
+        })
+      })
+      .catch(er => res.json({status: 'error', msg: 'Relogin'}))
   })
 
 

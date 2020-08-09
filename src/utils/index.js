@@ -5,17 +5,17 @@ export {default as verifyJWToken} from './verifyJWToken'
 export {default as FastClone} from './fastClone'
 
 export const modify = () => {
-  Array.prototype.flat = function() {
-    let clone = [...this]
-    let res = [];
-    while(clone.length) {
-      let el = clone.pop();
-      if(Array.isArray(el)) {
-        clone.push(...el)
-      } else {
-        res.unshift(el)
-      }
-    }
-    return res
-  }
+  // Array.prototype.flat = function() {
+  //   let clone = [...this]
+  //   let res = [];
+  //   while(clone.length) {
+  //     let el = clone.pop();
+  //     if(Array.isArray(el)) {
+  //       clone.push(...el)
+  //     } else {
+  //       res.unshift(el)
+  //     }
+  //   }
+  //   return res
+  // }
 }
