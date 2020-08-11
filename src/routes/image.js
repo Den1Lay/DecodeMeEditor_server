@@ -1,8 +1,10 @@
 import {Router} from 'express'
+import path from 'path'
 import {v4} from 'uuid'
 import {cyan, greenBright, redBright} from 'chalk'
 import multer from 'multer'
-import {writeFile} from '../utils'
+import {writeFile, readFile, fileChecker} from '../utils'
+import axios from 'axios'
 
 const storageConfig = multer.diskStorage({
     destination: (req, file, cb) =>{
@@ -20,10 +22,33 @@ var router = Router();
 
 router
   .post('/', upload.single('picture'), (req, res) => {
-    console.log('REQ_HEADERS:', req.headers)
-    console.log(cyan('REQ_FILE:'), req.file);
-    console.log(greenBright('REQ_BODY:'), req.file);
-    res.send('http://localhost:4040/uploads/'+req.headers.newname)
+
+    // Красиво или правильно, вот в чем вопрос) Нельзя быть уверенным в том, что сохранение прошло успешно, но
+    // в тоже время картинка, которая появляется сразу же важней)
+
+
+    const yandexDiskHeaders = { Authorization: process.env.DISK_TOKEN ?? '' };
+
+    readFile([__dirname, '..', '..', 'uploads', req.headers.newname]).then((data) => {
+      //console.log('PICTURE_DATA:', data);
+      res.send('http://localhost:4040/uploads/'+req.headers.newname);
+      axios.get(`${process.env.UPLOAD_PREV}illustrations%2F${req.headers.newname}`, { headers: yandexDiskHeaders})
+        .then(({data: uploadData}) => {
+          //console.log('IMAGE_UPLOAD_DATA:', uploadData);
+
+          axios.put(uploadData.href, data, { headers: yandexDiskHeaders })
+            .then((data) => {
+              if(data.status !== 201) {
+                console.log(redBright('ERROR_SAVE_IMAGE_IN_DISK:', data.status))
+              }
+            })
+            .catch(err => {
+              console.log(redBright('ERROR_SAVE_IMAGE_IN_DISK:', err))
+            })
+        });
+
+    })
+
   })
 
 export default router

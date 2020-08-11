@@ -1,6 +1,7 @@
 // фильтрация проектов которые улетают на клиент.
 import createSS from 'socket.io';
 import {greenBright, redBright, blueBright} from 'chalk'
+import axios from 'axios'
 //import FastClone from 'fastest-clone'
 import {verifyJWToken, readFile, writeFile, FastClone} from '../utils'
 
@@ -61,6 +62,9 @@ export default class WSServer {
             //getting friends projects
             socket.join(superId, () => {
               const saveSocksStorage = () => {
+                // возможно странная ошибка вызванна тем, происходит одновременная работа двух ридеров и врайтеров...
+                // можно ловить это и закидывать вызов функции в спец поле, которое будет вызываться при наличии там
+                // аргумента. тем самым последовательность будет стопиться.. что так же не очень хорошо...
                   readFile('sockets.json').then(socks => {
                     socks.push({[socket.id]: superId});
                     console.log('SR_AFTER_JOIN:', socket.rooms)
@@ -439,7 +443,7 @@ export default class WSServer {
             })
           })
         })
-        .on('SET_ILLUSTRATIONS', ({person, workPCD, src, action}) => {
+        .on('SET_ILLUSTRATIONS', ({person, workPCD, newIllustration, action}) => {
           // обновление
           const {superId} = socket.handshake;
           readFile('users.json').then(data => {
@@ -461,17 +465,30 @@ export default class WSServer {
             }
 
             if(action === 'ADD') {
-              data[personInd[0]].projects[projectInd].versions[versionInd].illustrations.push(src)
+              data[personInd[0]].projects[projectInd].versions[versionInd].illustrations.push(newIllustration)
             } else {
-              data[personInd[0]].projects[projectInd].versions[versionInd].illustrations = data[personInd[0]].projects[projectInd].versions[versionInd].illustrations.filter(el => el !== src)
+              data[personInd[0]].projects[projectInd].versions[versionInd].illustrations = data[personInd[0]].projects[projectInd].versions[versionInd].illustrations.filter(({src}) => src !== newIllustration.src)
               // удаление файла на диске и в uploads
+              let sintet = '25c6947e-0778-4fca-b3f3-ad6e6b25475c.jpg'
+              console.log('newIllustration.name:',newIllustration.name);
+              let end = newIllustration.src.split('/');
+              end = end[end.length-1];
+              console.log('end:', end)
+              axios.delete(`https://cloud-api.yandex.net:443/v1/disk/resources?path=disk%3A%2Fillustrations%2F${end}`, { headers: { Authorization: process.env.DISK_TOKEN ?? '' }})
+                .then(() => console.log('SUCCESS_DELETE') )
+                .catch(er => console.log(redBright('DELETE_ERROR:'), er))
+
             }
 
             writeFile('users.json', data).then(() => {
-                this.io.to(person).emit('NEW_ILLUSTRATIONS', {person, workPCD, src, action, sender: superId});
+                this.io.to(person).emit('NEW_ILLUSTRATIONS', {person, workPCD, newIllust: newIllustration, action, sender: superId});
             });
 
           })
+        })
+        .on('REQUEST_RIGHT', ({person}) => {
+          const {superId} = socket.handshake;
+          this.io.to(person).emit('REQUEST_RIGHT', {sender: superId})
         })
         .on('disconnect', (reason) => {
 // поиск последнего места, где был чел и если там остался след в виде его мастера, то он зануляется и на адрес чела
@@ -489,7 +506,7 @@ export default class WSServer {
                 readFile('users.json').then(data => {
                   let personInd = [];
                   this.findInd(personInd, data, workId);
-                  let workPersonInd = personInd;
+                  let workPersonInd = personInd.slice();
 
                   if(data[personInd[0]].lastPerson !== workId) {
                     this.findInd(workPersonInd, data, data[personInd[0]].lastPerson);
@@ -521,7 +538,7 @@ export default class WSServer {
                   };
                   let workMaster = data[workPersonInd[0]].projects[projectInd].versions[versionInd].master;
                   writeFile('users.json', data).then(() => {
-                    context.io.to(data[personInd[0]].lastPerson).emit('NEW_AVAILABLES', {
+                    this.io.to(data[personInd[0]].lastPerson).emit('NEW_AVAILABLES', {
                       person: data[personInd[0]].lastPerson,
                       workPCD,
                       payload: workMaster,

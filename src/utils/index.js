@@ -3,6 +3,7 @@ export {default as writeFile} from './writeFile';
 export {default as createJWToken} from './createJWToken';
 export {default as verifyJWToken} from './verifyJWToken'
 export {default as FastClone} from './fastClone'
+export {default as fileChecker} from './fileChecker'
 
 export const modify = () => {
   // Array.prototype.flat = function() {
