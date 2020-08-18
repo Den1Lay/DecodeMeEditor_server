@@ -44,9 +44,20 @@ app
   .use(logger('dev'))
   .use(express.json())
   .use(express.urlencoded())
+  .post('/error', (req, res, next) => {
+    //save some - where
+    console.log('DATA:', req.body.data)
+    res.send('Success');
+
+  })
+  // .use(express.static('../public/build/index.html'))
+  //
+  .get('*', express.static(path.resolve(__dirname, '..', 'public')))
+  .use('/desktop', express.static(path.resolve(__dirname, '..', 'client','build')))
+  .use('/mobile', express.static(path.resolve(__dirname, '..', 'fakePublick')))
   .use('/uploads', express.static(path.resolve(__dirname, '..', 'uploads')))
   .use('/auth', auth)
-    .use(checkAuth)
+  //  .use(checkAuth)
   //.get('*',express.static(path.resolve(__dirname, '..', '..', 'client', 'build')))
   .use('/image', image)
 

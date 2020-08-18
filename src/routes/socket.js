@@ -66,8 +66,11 @@ export default class WSServer {
                 // можно ловить это и закидывать вызов функции в спец поле, которое будет вызываться при наличии там
                 // аргумента. тем самым последовательность будет стопиться.. что так же не очень хорошо...
                   readFile('sockets.json').then(socks => {
-                    socks.push({[socket.id]: superId});
+                    let newSocketObj = {};
+                    newSocketObj[socket.id] = superId;
+                    socks = socks.concat(newSocketObj);
                     console.log('SR_AFTER_JOIN:', socket.rooms)
+                    console.log(redBright("SOCKS_BEFORE_SAVE:"), socks)
                     writeFile('sockets.json', socks);
                   })
               }
@@ -158,26 +161,26 @@ export default class WSServer {
           let {superId} = socket.handshake;
           // work with person room
           readFile('users.json').then(data => {
-            let cloneData = [...data];
             let lockInd = [];
-            this.findInd(lockInd, cloneData, superId);
-            cloneData[lockInd[0]].projects = [project].concat(cloneData[lockInd[0]].projects);
-            cloneData[lockInd[0]].projectsCoordsData = pcd;
-            cloneData[lockInd[0]].lastProject = project.superId;
-            cloneData[lockInd[0]].userData.myLastProject = myLastProject;
+            this.findInd(lockInd, data, superId);
+            data[lockInd[0]].projects = [project].concat(data[lockInd[0]].projects);
+            data[lockInd[0]].projectsCoordsData = pcd;
+            data[lockInd[0]].lastProject = project.superId;
+            data[lockInd[0]].userData.myLastProject = myLastProject;
 
             // let friends = cloneData[lockInd[0]].userData.friends;
             // friends.forEach(address => {
             //   this.io.to(address).emit('NEW_FRIENDS_PROJECT')
             // })
-            project.access.forEach(address => {
-              this.io.to(address).emit('SHOW_ACCESS', {superId: project.superId, personId: superId})
-            });
-            project.superAccess.forEach(address => {
-              this.io.to(address).emit('SUPER_ACCESS', {superId: project.superId, personId: superId})
-            });
+            this.io.to(superId).emit('NEW_FRIEND_PROJECT', {project, sender:superId})
+            // project.access.forEach(address => {
+            //   this.io.to(address).emit('SHOW_ACCESS', {superId: project.superId, personId: superId})
+            // });
+            // project.superAccess.forEach(address => {
+            //   this.io.to(address).emit('SUPER_ACCESS', {superId: project.superId, personId: superId})
+            // });
 
-            writeFile('users.json', cloneData)
+            writeFile('users.json', data)
           })
           // this.verifyUser(token, ({superId}) => {
           //
@@ -241,7 +244,7 @@ export default class WSServer {
 
           })
         })
-
+        // обновление всех важных PCD дат происходит тут, а вызов прилетает каждый раз когда происходят хоть какие то
         .on('UPDATE_PCD', ({pcd, person, lastProject, myLastProject, friends}) => {
           let {superId} = socket.handshake;
           console.log('GET_UPDATE_PCD');
@@ -251,7 +254,7 @@ export default class WSServer {
             let lockInd = [];
             this.findInd(lockInd, cloneData, superId);
 
-            cloneData[lockInd[0]].projectsCoordsData = pcd;
+            cloneData[lockInd[0]].projectsCoordsData = pcd; // слава алаху
             cloneData[lockInd[0]].lastPerson = person;
             cloneData[lockInd[0]].lastProject = lastProject;
             cloneData[lockInd[0]].userData.myLastProject = myLastProject;
@@ -265,7 +268,6 @@ export default class WSServer {
         .on('NEW_VERSION', ({pcd, person, projectId, workVersion}) => {
           // НЕКСТ КВест это переход на точечное обновление.. а иначе через сокеты будут пролетать мегабайты строк..
           let {superId} = socket.handshake;
-          console.log('GET_NEW_VERSION');
           readFile('users.json').then(data => {
             let personInd = [];
             this.findInd(personInd, data, person);
@@ -282,7 +284,7 @@ export default class WSServer {
             this.findInd(userInd, data, superId);
             data[userInd[0]].projectsCoordsData = pcd;
 
-            this.io.to(projectId).emit('NEW_VERSION', {projectId, workVersion, person});
+            this.io.to(person).emit('NEW_FRIEND_VERSION', {projectId, workVersion, person, sender: superId});
             writeFile('users.json', data)
           })
         })
@@ -302,9 +304,10 @@ export default class WSServer {
             let personInd = [];
             this.findInd(personInd, data, personId);
             let user = data[personInd[0]];
-            user.projects = user.projects.filter(({access}) => {
-              return access.includes('all')
-            })
+            // фильтрация того что показываю, а что нет на плечиках клиента
+            // user.projects = user.projects.filter(({access}) => {
+            //   return access.includes('all')
+            // })
             delete user.userData.password;
             socket.emit('NEW_USERS_DETAIL', {user})
           })
@@ -490,9 +493,96 @@ export default class WSServer {
           const {superId} = socket.handshake;
           this.io.to(person).emit('REQUEST_RIGHT', {sender: superId})
         })
+        .on('DELETE', ({workPCD, workPerson, target}) => {
+          const {superId} = socket.handshake;
+
+          readFile('users.json').then(data => {
+            let personInd = [];
+            this.findInd(personInd, data, workPerson);
+
+            let projectInd
+            for(let i in data[personInd[0]].projects) {
+              if(data[personInd[0]].projects[i].superId === workPCD.projectId) {
+                projectInd = i;
+                break
+              }
+            }
+            // обновление PCD у отправителя, 100 Мув.
+            let pcdInd;
+            for(let i in data[personInd[0]].projectsCoordsData) {
+              if(data[personInd[0]].projectsCoordsData[i].projectId === workPCD.projectId) {
+                pcdInd = i;
+                break
+              }
+            }
+            // поиск владельца всеми этими сокровищами и замена переменных)
+
+            // пройтись с дебагером и проверить работоспособность delete
+
+            let userPcdInd;
+            // удалять проекты может только владец аккаунта, так что здесь без разницы, откуда дата.
+            if (target === 'project') {
+              data[personInd[0]].projects.splice(projectInd, 1);
+              data[personInd[0]].projectsCoordsData.splice(pcdInd, 1)
+            }
+
+            if(target === 'version') { // здесь нужно удалить даты у обоих челов с проверкой естесена
+              let versionInd;
+              for(let i in data[personInd[0]].projects[projectInd[0]].versions) {
+                if(data[personInd[0]].projects[projectInd[0]].versions[i].superId === workPCD.workVersion) {
+                  versionInd = i;
+                }
+              };
+              data[personInd[0]].projects[projectInd[0]].versions.splice(versionInd, 1);
+              data[personInd[0]].projectsCoordsData.splice(pcdInd, 1)
+
+                let userInd = [];
+              if(superId !== workPerson) { // обработка случая удаления версии не владельцем. Повторное удаления pcd
+                this.findInd(userInd, data, superId);
+                let userPcdInd;
+
+                for(let i in data[userInd[0]].projectsCoordsData) {
+                  if(data[userInd[0]].projectsCoordsData[i].projectId === workPCD.projectId) {
+                    userPcdInd = i;
+                  }
+                }
+                data[userInd[0]].projectsCoordsData.splice(userPcdInd, 1)
+              }
+            }
+
+              writeFile('users.json', data).then(() => {
+                this.io.to(workPerson).emit('DELETE', {person: workPerson, workPCD, sender: superId, target});
+              })
+          })
+
+        })
+        .on('LOGOUT', () => {
+          const {superId} = socket.handshake;
+
+          readFile('sockets.json').then(data => {
+            let personInd;
+            for(let i in data) {
+                if(Object.values(data[i])[0] === superId) {
+                  personInd = i;
+                }
+            };
+
+            data.splice(personInd, 1)
+
+            for(let i in socket.rooms) {
+              console.log("ROOM_I:",i)
+              socket.leave(i);
+            }
+            writeFile('sockets.json', data)
+          })
+        })
         .on('disconnect', (reason) => {
 // поиск последнего места, где был чел и если там остался след в виде его мастера, то он зануляется и на адрес чела
 // улетает евент, освобождающий позицию.
+
+//!!! Обработать исключение при котором у чела нет проектов или версий....
+
+// Дисконект сильно устарел на фоне удалений и отстутсвующих проектов, длсишнуть.
           console.log(this.findInd)
           let context = this;
           const {superId} = socket.handshake;

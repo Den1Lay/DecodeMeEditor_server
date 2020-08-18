@@ -59,12 +59,12 @@ router
             let friends = data.slice().filter(({userData: {superId}}, i) => {
               return personFriends.some(({superId: friendId}) => superId === friendId)
             });
-            friends = friends.map((el) => {
-              return {
-                ...el,
-                projects: el.projects.filter(({access}) => access.includes(data[workInd].userData.superId) || access.includes('all'))
-              }
-            });
+            // friends = friends.map((el) => {
+            //   return {
+            //     ...el,
+            //     projects: el.projects.filter(({access}) => access.includes(data[workInd].userData.superId) || access.includes('all'))
+            //   }
+            // });
             res.json({
               status: 'success',
               msg: "You are logged in",
@@ -101,12 +101,12 @@ router
             let friends = data.slice().filter(({userData: {superId}}, i) => {
               return personFriends.some(({superId: friendId}) => superId === friendId)
             });
-            friends = friends.map((el) => {
-              return {
-                ...el,
-                projects: el.projects.filter(({access}) => access.includes(superId) || access.includes('all'))
-              }
-            });
+            // friends = friends.map((el) => { без фильтров потому что это обязанность клиента, а еще они падает, если нет дат.
+            //   return {
+            //     ...el,
+            //     projects: el.projects.filter(({access}) => access.includes(superId) || access.includes('all'))
+            //   }
+            // });
             res.json({
               status: 'success',
               msg: "Automatic login was made",
