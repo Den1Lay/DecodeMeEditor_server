@@ -5,7 +5,7 @@ import cookieParser from 'cookie-parser';
 import logger from 'morgan';
 import dotenv from 'dotenv'
 
-import {auth, main, image} from './routes';
+import {auth, main, image, error} from './routes';
 import {checkAuth, updateLastSeen} from './middlewares'
 //import unsecured from './routes/unsecured';
 //import main from './routes/main';
@@ -44,12 +44,7 @@ app
   .use(logger('dev'))
   .use(express.json())
   .use(express.urlencoded())
-  .post('/error', (req, res, next) => {
-    //save some - where
-    console.log('DATA:', req.body.data)
-    res.send('Success');
 
-  })
   // .use(express.static('../public/build/index.html'))
   //
   .get('*', express.static(path.resolve(__dirname, '..', 'public')))
@@ -57,7 +52,8 @@ app
   .use('/mobile', express.static(path.resolve(__dirname, '..', 'fakePublick')))
   .use('/uploads', express.static(path.resolve(__dirname, '..', 'uploads')))
   .use('/auth', auth)
-  //  .use(checkAuth)
+  .use(checkAuth)
+  .use('/error', error)
   //.get('*',express.static(path.resolve(__dirname, '..', '..', 'client', 'build')))
   .use('/image', image)
 

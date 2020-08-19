@@ -26,13 +26,11 @@ var server = http.createServer(app);
  * Listen on provided port, on all network interfaces.
  */
 
-// Пока что высокой необходимости в мапе нет.
-
 dataLoader(() => {
 
   server.listen(port, () => {
     console.log(`Listen ${port} port`);
-    updateDisk()
+    //updateDisk()
   });
   server.on('error', onError);
   server.on('listening', onListening);

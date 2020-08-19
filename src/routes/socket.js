@@ -45,7 +45,7 @@ export default class WSServer {
             next();
           }, tokenErrorHandl)
         })
-        .on('JOIN', ({token}) => {
+        .on('JOIN', () => {
           let {superId} = socket.handshake;
           console.log(blueBright('HANDSHAKE: '), superId)
           // join to projects rooms
@@ -65,6 +65,8 @@ export default class WSServer {
                 // возможно странная ошибка вызванна тем, происходит одновременная работа двух ридеров и врайтеров...
                 // можно ловить это и закидывать вызов функции в спец поле, которое будет вызываться при наличии там
                 // аргумента. тем самым последовательность будет стопиться.. что так же не очень хорошо...
+
+                // можно протестить хранение сокетов в global объекте
                   readFile('sockets.json').then(socks => {
                     let newSocketObj = {};
                     newSocketObj[socket.id] = superId;
@@ -607,35 +609,36 @@ export default class WSServer {
                       pcdInd = i;
                     }
                   };
-                  let workPCD = data[personInd[0]].projectsCoordsData[pcdInd];
+                  if(pcdInd) {
+                    let workPCD = data[personInd[0]].projectsCoordsData[pcdInd];
 
-                  let projectInd;
-                  for(let i in data[workPersonInd[0]].projects) {
-                    if(data[workPersonInd[0]].projects[i].superId === workPCD.projectId) {
-                      projectInd = i;
+                    let projectInd;
+                    for(let i in data[workPersonInd[0]].projects) {
+                      if(data[workPersonInd[0]].projects[i].superId === workPCD.projectId) {
+                        projectInd = i;
+                      }
                     }
-                  }
 
-                  let versionInd;
-                  for(let i in data[workPersonInd[0]].projects[projectInd].versions) {
-                    if(data[workPersonInd[0]].projects[projectInd].versions[i].superId === workPCD.workVersion) {
-                      versionInd = i;
+                    let versionInd;
+                    for(let i in data[workPersonInd[0]].projects[projectInd].versions) {
+                      if(data[workPersonInd[0]].projects[projectInd].versions[i].superId === workPCD.workVersion) {
+                        versionInd = i;
+                      }
                     }
-                  }
 
-                  if(data[workPersonInd[0]].projects[projectInd].versions[versionInd].master === data[personInd[0]].userData.nickName) {
-                    data[workPersonInd[0]].projects[projectInd].versions[versionInd].master = null
-                  };
-                  let workMaster = data[workPersonInd[0]].projects[projectInd].versions[versionInd].master;
-                  writeFile('users.json', data).then(() => {
-                    this.io.to(data[personInd[0]].lastPerson).emit('NEW_AVAILABLES', {
-                      person: data[personInd[0]].lastPerson,
-                      workPCD,
-                      payload: workMaster,
-                      sender: workId
+                    if(data[workPersonInd[0]].projects[projectInd].versions[versionInd].master === data[personInd[0]].userData.nickName) {
+                      data[workPersonInd[0]].projects[projectInd].versions[versionInd].master = null
+                    };
+                    let workMaster = data[workPersonInd[0]].projects[projectInd].versions[versionInd].master;
+                    writeFile('users.json', data).then(() => {
+                      this.io.to(data[personInd[0]].lastPerson).emit('NEW_AVAILABLES', {
+                        person: data[personInd[0]].lastPerson,
+                        workPCD,
+                        payload: workMaster,
+                        sender: workId
+                      })
                     })
-                  })
-
+                  }
                 })
                 // reduce here
                 socks.splice(i, 1);

@@ -1,12 +1,47 @@
-import {writeFile, fileChecker, consts} from '../utils'
+import {writeFile, fileChecker, consts, readFile} from '../utils'
 import { blueBright, greenBright, redBright } from 'chalk'
 import axios from 'axios'
-import path from 'path'
-import fs from 'fs'
+import { format } from 'date-fns'
+import {v4} from 'uuid'
+
 
 export default (launchServer) => {
   const yandexDiskHeaders = { Authorization: process.env.DISK_TOKEN || '' },
   {BASE_ADDRESS} = consts
+
+
+  function updater(){
+    readFile('users.json').then(data => {
+      let oldJsonName = format(new Date(), 'dd:MM:yyyy__kk:mm_|_')+v4().substring(0, 7);
+      let testUrl = `https://cloud-api.yandex.net:443/v1/disk/resources/upload?path=disk%3A%2FUsersHistory%2F${oldJsonName}.json`;
+      console.log('TEST_URL:',testUrl)
+      axios.get(testUrl,
+      {headers: yandexDiskHeaders}).then(({data: uploadData}) => {
+        axios.put(uploadData.href, data, {headers: yandexDiskHeaders}).then(() => {
+          console.log('SUCCESS_SUPER_SAVE');
+        }).catch(er => console.log(redBright('PUT_USERS.JSON_TO_SAVES_ERR:', er)))
+      }).catch(er => console.log(redBright('GET_URL_TO_SAVES_ERR:', er)))
+
+      axios.get('https://cloud-api.yandex.net:443/v1/disk/resources/upload?path=disk%3A%2Fusers.json&overwrite=true',
+      {headers: yandexDiskHeaders}).then(({data: uploadData}) => {
+        console.log('SUCCESS_GET_HREF');
+        axios.put(uploadData.href, data, {headers: yandexDiskHeaders}).then(() => {
+
+        }).catch(er => console.log(redBright('PUT_USERS.JSON_ERR:', er)))
+      }).catch(er => console.log(redBright('GET_UPLOAD_HREF_ERROR:', er)))
+    })
+    setTimeout(updater, 60000*60*12);
+    // axios.post('https://cloud-api.yandex.net:443/v1/disk/resources/copy?from=disk%3A%2Fusers.json&path=disk%3A%2FUsersHistory%2F4dataPlusUU.json&force_async=true&overwrite=true',  
+    // // некоторые "рабочие" урлы просто дропают ошибку, например перемещение
+    // // Причем никакой связи между 401 и происходящим нет.
+    // // Самое удивительное, так это то, что запрос отлично рабает в postmane.. Я просто хз что это.
+    // // Любые трансфер операции заканчиваются 401
+    // {headers: yandexDiskHeaders})
+    //   .then(() => {
+    //     console.log('SUCCESS_TRANSFER');
+        
+    //   }).catch(er => console.log(redBright('TRANSFER_ERROR', er)))
+  }
 
   axios.get(BASE_ADDRESS, {
     headers: yandexDiskHeaders
@@ -81,6 +116,7 @@ export default (launchServer) => {
 
     Promise.all([imgPromise, usersPromise]).then(() => {
       // запуск сервера.
+      updater();
       launchServer()
     })
     .catch(errors => console.log(redBright('DATA_LOADER_ERRORS:'), errors)) // прибивать ли процессы ноды?
