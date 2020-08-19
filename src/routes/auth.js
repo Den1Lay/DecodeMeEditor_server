@@ -20,6 +20,8 @@ router
               password,
               friends: [],
               superId: newUserSuperId,
+              applicantList: [],
+              myLastProject: null,
             },
             projects: [],
             projectsCoordData: [],
@@ -29,11 +31,12 @@ router
           let newData = [...data, newUser];
 
           writeFile('users.json', newData).then(() => {
-            let token = createJWToken({nickName, superId: newUser.userData.superId}) // real test data, make it better
-            res.json({status: "success", data: newData, token})
+            let token = createJWToken({nickName, superId: newUser.userData.superId}); // real test data, make it better
+            delete newUser.userData.password;
+            res.json({status: "success", msg: "Wellcome to our club)", data: {personObj: newUser, friends: []}, token})
           })
         } else {
-          res.json({status: "error", msg: "Make another nickname..."})
+          res.json({status: "error", msg: "The NickName is already taken"})
         }
       })
   })

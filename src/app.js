@@ -63,6 +63,9 @@ app
 
   .use('/', main)
   .use(updateLastSeen)
+  .get('*', (req, res, next) => {
+    res.redirect('/')
+  })
 
 
 export default app;

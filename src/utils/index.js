@@ -4,6 +4,7 @@ export {default as createJWToken} from './createJWToken';
 export {default as verifyJWToken} from './verifyJWToken'
 export {default as FastClone} from './fastClone'
 export {default as fileChecker} from './fileChecker'
+export {default as consts} from './consts'
 
 export const modify = () => {
   // Array.prototype.flat = function() {

@@ -476,7 +476,7 @@ export default class WSServer {
               console.log('newIllustration.name:',newIllustration.name);
               let end = newIllustration.src.split('/');
               end = end[end.length-1];
-              console.log('end:', end)
+              //console.log('end:', end)
               axios.delete(`https://cloud-api.yandex.net:443/v1/disk/resources?path=disk%3A%2Fillustrations%2F${end}`, { headers: { Authorization: process.env.DISK_TOKEN ?? '' }})
                 .then(() => console.log('SUCCESS_DELETE') )
                 .catch(er => console.log(redBright('DELETE_ERROR:'), er))
