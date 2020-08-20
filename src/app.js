@@ -43,7 +43,7 @@ app
   .use(cors())
   //.use(logger('dev'))
   .use(express.json())
-  .use(express.urlencoded())
+  .use(express.urlencoded({ extended: true }))
 
   // .use(express.static('../public/build/index.html'))
   //
