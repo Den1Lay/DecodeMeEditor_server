@@ -41,15 +41,15 @@ dotenv.config();
 var app = express();
 app
   .use(cors())
-  .use(logger('dev'))
+  //.use(logger('dev'))
   .use(express.json())
   .use(express.urlencoded())
 
   // .use(express.static('../public/build/index.html'))
   //
   .get('*', express.static(path.resolve(__dirname, '..', 'public')))
-  .use('/desktop', express.static(path.resolve(__dirname, '..', 'client','build')))
-  .use('/mobile', express.static(path.resolve(__dirname, '..', 'fakePublick')))
+  .use('/desktop', express.static(path.resolve(__dirname, '..', 'DecodeMeEditor_client','build')))
+  .use('/mobile', express.static(path.resolve(__dirname, '..', 'mobile', 'build')))
   .use('/uploads', express.static(path.resolve(__dirname, '..', 'uploads')))
   .use('/auth', auth)
   .use(checkAuth)

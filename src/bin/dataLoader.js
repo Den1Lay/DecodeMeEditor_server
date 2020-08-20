@@ -1,4 +1,9 @@
-import {writeFile, fileChecker, consts, readFile} from '../utils'
+// Здесь происходит добыча картинок и users.json с Яндекс диска
+// Осуществляется полный цикл поиска и скачивания данных. По резолву Promise.all запускается рекурсивка,
+// Которая сейвит данные на диске, а так же сам сервер.
+
+
+import {writeFile, fileChecker, readFile} from '../utils'
 import { blueBright, greenBright, redBright } from 'chalk'
 import axios from 'axios'
 import { format } from 'date-fns'
@@ -6,8 +11,7 @@ import {v4} from 'uuid'
 
 
 export default (launchServer) => {
-  const yandexDiskHeaders = { Authorization: process.env.DISK_TOKEN || '' },
-  {BASE_ADDRESS} = consts
+  const yandexDiskHeaders = { Authorization: process.env.DISK_TOKEN || '' };
 
 
   function updater(){
@@ -31,7 +35,7 @@ export default (launchServer) => {
       }).catch(er => console.log(redBright('GET_UPLOAD_HREF_ERROR:', er)))
     })
     setTimeout(updater, 60000*60*12);
-    // axios.post('https://cloud-api.yandex.net:443/v1/disk/resources/copy?from=disk%3A%2Fusers.json&path=disk%3A%2FUsersHistory%2F4dataPlusUU.json&force_async=true&overwrite=true',  
+    // axios.post('https://cloud-api.yandex.net:443/v1/disk/resources/copy?from=disk%3A%2Fusers.json&path=disk%3A%2FUsersHistory%2F4dataPlusUU.json&force_async=true&overwrite=true',
     // // некоторые "рабочие" урлы просто дропают ошибку, например перемещение
     // // Причем никакой связи между 401 и происходящим нет.
     // // Самое удивительное, так это то, что запрос отлично рабает в postmane.. Я просто хз что это.
@@ -39,11 +43,11 @@ export default (launchServer) => {
     // {headers: yandexDiskHeaders})
     //   .then(() => {
     //     console.log('SUCCESS_TRANSFER');
-        
+
     //   }).catch(er => console.log(redBright('TRANSFER_ERROR', er)))
   }
 
-  axios.get(BASE_ADDRESS, {
+  axios.get(process.env.BASE_ADDRESS, {
     headers: yandexDiskHeaders
   })
   .then(({data: {_embedded: {items}}}) => {
@@ -53,7 +57,7 @@ export default (launchServer) => {
     let imgPromise = new Promise((resolve, reject) => {
       if(items.some(({name}) => name === 'illustrations')) {
 
-        axios.get(`${BASE_ADDRESS}illustrations%2F`, {headers: yandexDiskHeaders})
+        axios.get(`${process.env.BASE_ADDRESS}illustrations%2F`, {headers: yandexDiskHeaders})
         .then(({data: {_embedded: {items}}}) => {
           //console.log('ILLUST_ITEMS:', items);
           for(let item of items) {
@@ -90,7 +94,7 @@ export default (launchServer) => {
             fileChecker(['data', 'users.json'])
               .then(exist => {
 
-                if(!exist || exist) {
+                if(!exist) {
                   axios.get(item.file, {headers: yandexDiskHeaders})
                   .then(({data}) => {
                     writeFile('users.json', data).then(() =>{

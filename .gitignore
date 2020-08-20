@@ -1,5 +1,6 @@
 dist-server/
 node_modules/
-public/
 .env
 src/data/
+data/
+DecodeMeEditor_client/

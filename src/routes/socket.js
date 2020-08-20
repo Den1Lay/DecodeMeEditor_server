@@ -3,10 +3,11 @@ import createSS from 'socket.io';
 import {greenBright, redBright, blueBright} from 'chalk'
 import axios from 'axios'
 //import FastClone from 'fastest-clone'
-import {verifyJWToken, readFile, writeFile, FastClone} from '../utils'
+import {verifyJWToken, readFile, writeFile, FastClone, mineInd} from '../utils'
 
 export default class WSServer {
   constructor(server) {
+    global.sockets = [];
     this.io = createSS(server, { origins: '*:*',})
     // .use((socket, next) => {
     //
@@ -25,12 +26,10 @@ export default class WSServer {
     // })
 
     .on('connection', socket => {
-      console.log('NEW_SOCKET')
-      if(process.env.DEV === '1') {
-        socket.on('npmStop', () => {
-          process.exit(0);
-        });
-      }
+      //console.log('NEW_SOCKET')
+      socket.on('npmStop', () => {
+        process.exit(0);
+      });
         const tokenErrorHandl = () => socket.emit('FORBIDDEN')
         // socket.on('npmStop', () => {
         //   process.exit(0);
@@ -38,7 +37,7 @@ export default class WSServer {
         // INIT EVENT Will if will client get token or after refresh
         socket
         .use((packet, next) => {
-          console.log(greenBright("PACKAGE: "), packet);
+          //console.log(greenBright("PACKAGE: "), packet[0]);
           let clientToken = packet[1].token ? packet[1].token : null;
           this.verifyUser(clientToken, ({superId: decodedSId}) => {
             socket.handshake.superId = decodedSId
@@ -47,7 +46,7 @@ export default class WSServer {
         })
         .on('JOIN', () => {
           let {superId} = socket.handshake;
-          console.log(blueBright('HANDSHAKE: '), superId)
+          //console.log(blueBright('HANDSHAKE: '), superId)
           // join to projects rooms
           // join to persons... in future..
 
@@ -67,14 +66,17 @@ export default class WSServer {
                 // аргумента. тем самым последовательность будет стопиться.. что так же не очень хорошо...
 
                 // можно протестить хранение сокетов в global объекте
-                  readFile('sockets.json').then(socks => {
-                    let newSocketObj = {};
-                    newSocketObj[socket.id] = superId;
-                    socks = socks.concat(newSocketObj);
-                    console.log('SR_AFTER_JOIN:', socket.rooms)
-                    console.log(redBright("SOCKS_BEFORE_SAVE:"), socks)
-                    writeFile('sockets.json', socks);
-                  })
+                  let socks = global.sockets.slice()
+                  let newSocketObj = {};
+                  newSocketObj[socket.id] = superId;
+                  socks = socks.concat(newSocketObj);
+                  //console.log('SR_AFTER_JOIN:', socket.rooms)
+                  //console.log(redBright("SOCKS_BEFORE_SAVE:"), socks)
+                  global.sockets = socks
+                  // readFile('sockets.json').then(socks => {
+                  //
+                  //   writeFile('sockets.json', socks);
+                  // })
               }
               if(person.lastPerson !== superId) {
                 socket.join(person.lastPerson, () => {
@@ -125,21 +127,14 @@ export default class WSServer {
             let personInd = []; // person
             this.findInd(personInd, data, person);
 
-            let projectInd;
-            for(let i in data[personInd[0]].projects) {
-              if(projectId === data[personInd[0]].projects[i].superId) {
-                projectInd = i;
-              }
-            };
+            let projectInd = [];
+            mineInd(data[personInd[0]].projects, projectId, 'superId', projectInd);
 
-            let versionInd;
-            for(let i in data[personInd[0]].projects[projectInd].versions) {
-              if(versionId === data[personInd[0]].projects[projectInd].versions[i].superId) {
-                versionInd = i;
-              }
-            };
+            let versionInd = [];
+            mineInd(data[personInd[0]].projects[projectInd[0]].versions, versionId, 'superId', versionInd)
+
             // Обновление проектов (своих иди чужих)
-            data[personInd[0]].projects[projectInd].versions[versionInd].data = workVersion;
+            data[personInd[0]].projects[projectInd[0]].versions[versionInd[0]].data = workVersion;
 
             // Обновление СВОЕГО PCD!
             let userInd = [];
@@ -196,14 +191,15 @@ export default class WSServer {
           readFile('users.json').then(data => {
             let lockInd = [];
             this.findInd(lockInd, data, superId);
-            let projectInd;
-            for(let i in data[lockInd[0]].projects) {
-              if(projectId === data[lockInd[0]].projects[i].superId) {
-                projectInd = i;
-              }
-            };
+            let projectInd = [];
+            mineInd(data[lockInd[0]].projects, projectId, 'superId', projectInd)
+            // for(let i in data[lockInd[0]].projects) {
+            //   if(projectId === data[lockInd[0]].projects[i].superId) {
+            //     projectInd = i;
+            //   }
+            // };
             for(let key in projectData) {
-              data[lockInd[0]].projects[projectInd][key] = projectData[key];
+              data[lockInd[0]].projects[projectInd[0]][key] = projectData[key];
             };
 
             const sender = (addresses, event) => {
@@ -274,13 +270,14 @@ export default class WSServer {
             let personInd = [];
             this.findInd(personInd, data, person);
 
-            let projectInd;
-            for(let i in data[personInd[0]].projects) {
-              if(data[personInd[0]].projects[i].superId === projectId) {
-                projectInd = i;
-              }
-            }
-            data[personInd[0]].projects[projectInd].versions.push(workVersion);
+            let projectInd = [];
+            mineInd(data[personInd[0]].projects, projectId, 'superId', projectInd)
+            // for(let i in data[personInd[0]].projects) {
+            //   if(data[personInd[0]].projects[i].superId === projectId) {
+            //     projectInd = i;
+            //   }
+            // }
+            data[personInd[0]].projects[projectInd[0]].versions.push(workVersion);
 
             let userInd = [];
             this.findInd(userInd, data, superId);
@@ -342,13 +339,7 @@ export default class WSServer {
             this.findInd(meInd, data, superId);
 
             let me = data[meInd[0]];
-            // let meClone;
-            // try {
-            //   let MeFactory = FastClone.factory(me);
-            //   meClone = new MeFactory(me)
-            // } catch (e) {
-            //   console.log("THAT_ERROR:",e)
-            // }
+
             data[personInd[0]].userData.applicantList.push(superId); // получаю свежие данные.. так что онли id
             writeFile('users.json', data).then(() => {
               me.userData.projectsCount = me.projects.length;
@@ -356,13 +347,6 @@ export default class WSServer {
               delete me.password;
               this.io.to(personId).emit('FRIEND_REQUEST', {user: me});
             })
-
-            //meClone.userData.projectCount = meClone.projects.length;
-            //meClone = meClone.userData;
-            // delete meClone.password;
-
-
-
 
           })
         })
@@ -388,38 +372,24 @@ export default class WSServer {
               this.io.to(personId).emit('NEW_FRIEND', {user: me});
             })
 
-
           })
         })
         .on('SUBSCRIBE_USER', ({personId}) => {
           let {superId} = socket.handshake;
           readFile('users.json').then(data => {
             // LEAVE MIDDLE не надо.. юзер может работать на другом акке.
-            // for(let key in socket.rooms) {
-            //   if(key !== superId) {
-            //     socket.leave(key);
-            //   }
-            // }
-            //
+
             socket.join(personId);
             let personInd = [];
             this.findInd(personInd, data, personId);
             socket.emit('NEW_SUBSCRIBE_USER', {friendObj: data[personInd[0]]});
-            // socket.rooms.forEach((item, i) => {
-            //
-            // });
 
           })
         })
         .on('UNSUBSCRIBE_USER', ({personId}) => {
           const {superId} = socket.handshake;
           socket.leave(personId);
-          //let picture = new Image();
-          // for(let key in socket.rooms) {
-          //   if(key !== superId) {
-          //     socket.leave(key)
-          //   }
-          // }
+
         })
         .on('UPDATE_AVAILABLE', ({workPCD, person, payload}) => {
           const {superId} = socket.handshake;
@@ -428,20 +398,13 @@ export default class WSServer {
             let personInd = [];
             this.findInd(personInd, data, person);
 
-            let projectInd;
-            for(let i in data[personInd[0]].projects) {
-              if(data[personInd[0]].projects[i].superId === workPCD.projectId) {
-                projectInd = i;
-              }
-            }
+            let projectInd = [];
+            mineInd(data[personInd[0]].projects, workPCD.projectId, 'superId', projectInd)
 
-            let versionInd;
-            for(let i in data[personInd[0]].projects[projectInd].versions) {
-              if(data[personInd[0]].projects[projectInd].versions[i].superId === workPCD.workVersion) {
-                versionInd = i;
-              }
-            }
-            data[personInd[0]].projects[projectInd].versions[versionInd].master = payload;
+            let versionInd = [];
+            mineInd(data[personInd[0]].projects[projectInd[0]].versions, workPCD.workVersion, 'superId', versionInd)
+
+            data[personInd[0]].projects[projectInd[0]].versions[versionInd[0]].master = payload;
 
             writeFile('users.json', data).then(() => {
               this.io.to(person).emit('NEW_AVAILABLES', {person, workPCD, payload, sender: superId});
@@ -450,12 +413,14 @@ export default class WSServer {
         })
         .on('SET_ILLUSTRATIONS', ({person, workPCD, newIllustration, action}) => {
           // обновление
+          // умирает после рефакторинга...
           const {superId} = socket.handshake;
           readFile('users.json').then(data => {
             let personInd = [];
             this.findInd(personInd, data, person);
 
             let projectInd;
+            //mineInd(data[personInd[0]].projects, workPCD.projectId, 'superId', projectInd)
             for(let i in data[personInd[0]].projects) {
               if(data[personInd[0]].projects[i].superId === workPCD.projectId) {
                 projectInd = i;
@@ -463,6 +428,7 @@ export default class WSServer {
             }
 
             let versionInd;
+            //mineInd(data[personInd[0]].projects[projectInd[0]].versions, workPCD.workVersion)
             for(let i in data[personInd[0]].projects[projectInd].versions) {
               if(data[personInd[0]].projects[projectInd].versions[i].superId === workPCD.workVersion) {
                 versionInd = i;
@@ -502,30 +468,32 @@ export default class WSServer {
             let personInd = [];
             this.findInd(personInd, data, workPerson);
 
-            let projectInd
-            for(let i in data[personInd[0]].projects) {
-              if(data[personInd[0]].projects[i].superId === workPCD.projectId) {
-                projectInd = i;
-                break
-              }
-            }
+            let projectInd = [];
+            mineInd(data[personInd[0]].projects, workPCD.projectId, 'superId', projectInd)
+            // for(let i in data[personInd[0]].projects) {
+            //   if(data[personInd[0]].projects[i].superId === workPCD.projectId) {
+            //     projectInd = i;
+            //     break
+            //   }
+            // }
             // обновление PCD у отправителя, 100 Мув.
-            let pcdInd;
-            for(let i in data[personInd[0]].projectsCoordsData) {
-              if(data[personInd[0]].projectsCoordsData[i].projectId === workPCD.projectId) {
-                pcdInd = i;
-                break
-              }
-            }
+            let pcdInd = [];
+            mineInd(data[personInd[0]].projectsCoordsData, workPCD.projectId, 'projectId', pcdInd)
+            // for(let i in data[personInd[0]].projectsCoordsData) {
+            //   if(data[personInd[0]].projectsCoordsData[i].projectId === workPCD.projectId) {
+            //     pcdInd = i;
+            //     break
+            //   }
+            // }
             // поиск владельца всеми этими сокровищами и замена переменных)
 
             // пройтись с дебагером и проверить работоспособность delete
 
-            let userPcdInd;
+
             // удалять проекты может только владец аккаунта, так что здесь без разницы, откуда дата.
             if (target === 'project') {
-              data[personInd[0]].projects.splice(projectInd, 1);
-              data[personInd[0]].projectsCoordsData.splice(pcdInd, 1)
+              data[personInd[0]].projects.splice(projectInd[0], 1);
+              data[personInd[0]].projectsCoordsData.splice(pcdInd[0], 1)
             }
 
             if(target === 'version') { // здесь нужно удалить даты у обоих челов с проверкой естесена
@@ -541,14 +509,10 @@ export default class WSServer {
                 let userInd = [];
               if(superId !== workPerson) { // обработка случая удаления версии не владельцем. Повторное удаления pcd
                 this.findInd(userInd, data, superId);
-                let userPcdInd;
+                let userPcdInd = [];
+                mineInd(data[userInd[0]].projectsCoordsData, workPCD.projectId, 'projectId', userPcdInd)
 
-                for(let i in data[userInd[0]].projectsCoordsData) {
-                  if(data[userInd[0]].projectsCoordsData[i].projectId === workPCD.projectId) {
-                    userPcdInd = i;
-                  }
-                }
-                data[userInd[0]].projectsCoordsData.splice(userPcdInd, 1)
+                data[userInd[0]].projectsCoordsData.splice(userPcdInd[0], 1)
               }
             }
 
@@ -561,22 +525,28 @@ export default class WSServer {
         .on('LOGOUT', () => {
           const {superId} = socket.handshake;
 
-          readFile('sockets.json').then(data => {
-            let personInd;
-            for(let i in data) {
-                if(Object.values(data[i])[0] === superId) {
-                  personInd = i;
-                }
-            };
+          let data = global.sockets.slice();
+          let personInd;
+          for(let i in data) {
+              if(Object.values(data[i])[0] === superId) {
+                personInd = i;
+              }
+          };
 
-            data.splice(personInd, 1)
+          data.splice(personInd, 1)
 
-            for(let i in socket.rooms) {
-              console.log("ROOM_I:",i)
-              socket.leave(i);
-            }
-            writeFile('sockets.json', data)
-          })
+          for(let i in socket.rooms) {
+            //console.log("ROOM_I:",i)
+            socket.leave(i);
+          }
+          global.sockets = data
+
+          // readFile('sockets.json').then(data => {
+          //
+          //
+          //   writeFile('sockets.json', data)
+          //
+          // })
         })
         .on('disconnect', (reason) => {
 // поиск последнего места, где был чел и если там остался след в виде его мастера, то он зануляется и на адрес чела
@@ -585,89 +555,82 @@ export default class WSServer {
 //!!! Обработать исключение при котором у чела нет проектов или версий....
 
 // Дисконект сильно устарел на фоне удалений и отстутсвующих проектов, длсишнуть.
-          console.log(this.findInd)
+          //console.log(this.findInd)
           let context = this;
           const {superId} = socket.handshake;
           // организовать работу с available.
-          console.log(redBright('disconnect '), socket.id);
-          readFile('sockets.json').then(socks => {
-            for(let i in socks) {
-              if(Object.values(socks[i])[0] === superId) {
-                //let newSuperId = socket.id
-                let workId = superId;
-                readFile('users.json').then(data => {
-                  let personInd = [];
-                  this.findInd(personInd, data, workId);
-                  let workPersonInd = personInd.slice();
+          //console.log(redBright('disconnect '), socket.id);
+          let socks = global.sockets.slice();
+          for(let i in socks) {
+            if(Object.values(socks[i])[0] === superId) {
+              //let newSuperId = socket.id
+              let workId = superId;
+              readFile('users.json').then(data => {
+                let personInd = [];
+                this.findInd(personInd, data, workId);
+                let workPersonInd = personInd.slice();
 
-                  if(data[personInd[0]].lastPerson !== workId) {
-                    this.findInd(workPersonInd, data, data[personInd[0]].lastPerson);
-                  }
-                  let pcdInd;
-                  for(let i in data[personInd[0]].projectsCoordsData) {
-                    if(data[personInd[0]].projectsCoordsData[i].projectId === data[personInd[0]].lastProject) {
-                      pcdInd = i;
-                    }
+                if(data[personInd[0]].lastPerson !== workId) {
+                  this.findInd(workPersonInd, data, data[personInd[0]].lastPerson);
+                }
+                let pcdInd = [];
+                mineInd(data[personInd[0]].projectsCoordsData, data[personInd[0]].lastProject, 'projectId', pcdInd)
+                // for(let i in data[personInd[0]].projectsCoordsData) {
+                //   if(data[personInd[0]].projectsCoordsData[i].projectId === data[personInd[0]].lastProject) {
+                //     pcdInd = i;
+                //   }
+                // };
+                if(pcdInd.length) {
+                  let workPCD = data[personInd[0]].projectsCoordsData[pcdInd[0]];
+
+                  let projectInd = [];
+                  mineInd(data[workPersonInd[0]].projects, workPCD.projectId, 'superId', projectInd);
+                  // for(let i in data[workPersonInd[0]].projects) {
+                  //   if(data[workPersonInd[0]].projects[i].superId === workPCD.projectId) {
+                  //     projectInd = i;
+                  //   }
+                  // }
+
+                  let versionInd = [];
+                  mineInd(data[workPersonInd[0]].projects[projectInd[0]].versions, workPCD.workVersion, 'superId', versionInd)
+                  // for(let i in data[workPersonInd[0]].projects[projectInd].versions) {
+                  //   if(data[workPersonInd[0]].projects[projectInd].versions[i].superId === workPCD.workVersion) {
+                  //     versionInd = i;
+                  //   }
+                  // }
+
+                  if(data[workPersonInd[0]].projects[projectInd[0]].versions[versionInd[0]].master === data[personInd[0]].userData.nickName) {
+                    data[workPersonInd[0]].projects[projectInd[0]].versions[versionInd[0]].master = null
                   };
-                  if(pcdInd) {
-                    let workPCD = data[personInd[0]].projectsCoordsData[pcdInd];
-
-                    let projectInd;
-                    for(let i in data[workPersonInd[0]].projects) {
-                      if(data[workPersonInd[0]].projects[i].superId === workPCD.projectId) {
-                        projectInd = i;
-                      }
-                    }
-
-                    let versionInd;
-                    for(let i in data[workPersonInd[0]].projects[projectInd].versions) {
-                      if(data[workPersonInd[0]].projects[projectInd].versions[i].superId === workPCD.workVersion) {
-                        versionInd = i;
-                      }
-                    }
-
-                    if(data[workPersonInd[0]].projects[projectInd].versions[versionInd].master === data[personInd[0]].userData.nickName) {
-                      data[workPersonInd[0]].projects[projectInd].versions[versionInd].master = null
-                    };
-                    let workMaster = data[workPersonInd[0]].projects[projectInd].versions[versionInd].master;
-                    writeFile('users.json', data).then(() => {
-                      this.io.to(data[personInd[0]].lastPerson).emit('NEW_AVAILABLES', {
-                        person: data[personInd[0]].lastPerson,
-                        workPCD,
-                        payload: workMaster,
-                        sender: workId
-                      })
+                  let workMaster = data[workPersonInd[0]].projects[projectInd[0]].versions[versionInd[0]].master;
+                  writeFile('users.json', data).then(() => {
+                    this.io.to(data[personInd[0]].lastPerson).emit('NEW_AVAILABLES', {
+                      person: data[personInd[0]].lastPerson,
+                      workPCD,
+                      payload: workMaster,
+                      sender: workId
                     })
-                  }
-                })
-                // reduce here
-                socks.splice(i, 1);
-                writeFile('sockets.json', socks)
+                  })
+                }
+              })
+              // reduce here
+              socks.splice(i, 1);
+              global.sockets = socks;
+              //writeFile('sockets.json', socks)
 
-              }
             }
-          });
-
+          }
           // в крайнем случае делаю объект с челами, где ключ это socket.id
           // ловлю события выхода и входа, с последующим переписыванием superId
           // можно организовать дополнительный JSON файл со всей датой
         })
-        // socket.on("PROVIDE_GREAT_ACCESS", ({token, projectInd, userId}) => {
-        //   this.verifyUser(token, ({superId}) => {
-        //     readFile('users.json').then(data => {
-        //       let cloneData = [...data];
-        //       let lockInd = [];
-        //       this.verifyUser(lockInd, cloneData, superId);
 
-        //       cloneData[lockInd].projects[projectInd].greatAccess = [...cloneData[lockInd].projects[projectInd].greatAccess, userId];
-        //       io.to(userId).emit('GREAT_WELLCOME', {name: cloneData[lockInd].userData.nickName, project: projectInd});
-        //     })
-        //   })
-        // })
 
     })
 
   }
+
+
 
   findInd(personInd, data, id) {
     let i = 0;
